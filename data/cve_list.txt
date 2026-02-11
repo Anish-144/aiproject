@@ -1,0 +1,9 @@
+Title: CVE-2021-44228 (Log4Shell)
+Description: Apache Log4j2 2.0-beta9 through 2.12.1 and 2.13.0 through 2.15.0 JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled.
+Tactics: Initial Access, Execution
+Impact: Remote Code Execution (RCE) allowing full system compromise.
+
+Title: CVE-2017-0144 (EternalBlue)
+Description: The SMBv1 server in Microsoft Windows Vista SP2; Windows Server 2008 SP2 and R2 SP1; Windows 7 SP1; Windows 8.1; Windows Server 2012 Gold and R2; Windows RT 8.1; and Windows 10 Gold, 1511, and 1607 allows remote attackers to execute arbitrary code via crafted packets, aka "Windows SMB Remote Code Execution Vulnerability."
+Tactics: Lateral Movement, Execution
+Impact: Critical RCE, widely used for lateral movement in ransomware like WannaCry.

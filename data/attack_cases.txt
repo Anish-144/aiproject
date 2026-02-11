@@ -1,0 +1,9 @@
+Title: Case Study: Ransomware Lateral Movement via SMB
+Description: In a recent incident, attackers gained initial access via a phishing email involving a malicious macro. Once inside, they used a modified version of Mimikatz to dump credentials. They then leveraged SMB (Server Message Block) vulnerabilities similar to EternalBlue to move laterally across the network, infecting file servers and backup systems before deploying the Ryuk ransomware payload.
+Tactics: Lateral Movement, Credential Access, Impact
+Impact: Widespread file encryption and business disruption.
+
+Title: Case Study: PowerShell Obfuscation and Data Exfiltration
+Description: Security analysts detected suspicious PowerShell activity where the script was base64 encoded to hide its content. De-obfuscation revealed that the script was gathering system information and attempting to POST data to an external, unknown IP address over HTTP. The attacker used T1059 (Command and Scripting Interpreter) to run the script and T1071 (Application Layer Protocol) for C2 communication.
+Tactics: Execution, Exfiltration, Command and Control
+Impact: Potential data breach and loss of sensitive information.

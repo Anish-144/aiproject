@@ -1,0 +1,9 @@
+langchain
+langchain-openai
+langchain-community
+faiss-cpu
+sentence-transformers
+python-dotenv
+langchain-huggingface
+langchain-google-genai
+flask

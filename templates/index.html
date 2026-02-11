@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard AI | SOC Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Courier+New&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>CyberGuard <span>AI</span></h2>
+            </div>
+            <div class="history-section">
+                <h3>Incident History</h3>
+                <ul id="history-list">
+                    <!-- History items will be added here -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <h1>SOC Incident Analysis</h1>
+                <div class="status-indicator">● System Active</div>
+            </header>
+
+            <!-- Input Section -->
+            <section class="input-section">
+                <textarea id="event-input" placeholder="PASTE SECURITY LOG OR EVENT DESCRIPTION HERE..."></textarea>
+                <div class="actions">
+                    <button id="analyze-btn" class="btn primary">Initiate Analysis</button>
+                    <button id="clear-btn" class="btn secondary">Clear</button>
+                </div>
+            </section>
+
+            <!-- Loading Spinner -->
+            <div id="loading" class="hidden">
+                <div style="text-align:center; padding: 40px;">
+                    <div style="color: var(--accent-cyan); font-size: 1.5rem; margin-bottom: 20px;">AI REASONING IN
+                        PROGRESS...</div>
+                    <div class="spinner"></div> <!-- CSS Spinner not def in provided CSS but implied -->
+                </div>
+            </div>
+
+            <!-- Analysis Results -->
+            <div id="results-container" class="hidden">
+
+                <!-- 1. Attack Timeline Flowchart -->
+                <div class="timeline-container">
+                    <div class="section-title">Attack Lifecycle Timeline</div>
+                    <div class="timeline" id="timeline-steps">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+
+                    <!-- Left Column: Detailed Analysis -->
+                    <div class="left-panel">
+                        <!-- Threat Explanation -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>⚠️ Artificial Intelligence Reasoning</h3>
+                            </div>
+                            <div class="card-body">
+                                <p id="attack-explanation"></p>
+                            </div>
+                        </div>
+
+                        <!-- MITRE Mapping -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🛡️ MITRE ATT&CK Matrix</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="mitre-tags"></div>
+                                <!-- Simple Visual Graph Representation -->
+                                <div class="node-graph" id="mitre-graph"
+                                    style="margin-top:20px; border-top:1px solid var(--border-color); padding-top:20px;">
+                                    <!-- Nodes injected by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Next Steps -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🔮 Remediation & Next Steps</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul id="next-steps-list"
+                                    style="list-style-position: inside; color: var(--text-secondary);"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: High Level Stats -->
+                    <div class="right-panel">
+
+                        <!-- Severity Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Severity Assessment</h3>
+                            </div>
+                            <div class="card-body" style="text-align: center;">
+                                <div id="severity-badge" class="badge">PENDING</div>
+                            </div>
+                        </div>
+
+                        <!-- Confidence Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>AI Confidence</h3>
+                            </div>
+                            <div class="card-body" style="text-align: center;">
+                                <div id="confidence-meter"
+                                    style="font-size: 2rem; color: var(--accent-cyan); font-weight: bold;">--%</div>
+                                <div id="confidence-reason"
+                                    style="font-size: 0.8rem; margin-top: 10px; color: var(--text-secondary);"></div>
+                            </div>
+                        </div>
+
+                        <!-- Progression Status -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Attack Progression</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-item">
+                                    <span class="stat-label">CURRENT STAGE</span>
+                                    <div class="stat-value" id="current-stage-text"
+                                        style="color: var(--accent-orange);">--</div>
+                                </div>
+                                <div class="stat-item" style="margin-top: 20px;">
+                                    <span class="stat-label">PREDICTED NEXT MOVE</span>
+                                    <div class="stat-value" id="next-stage-text" style="color: var(--accent-pink);">--
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Transparency Section -->
+                <section class="transparency-section" style="margin-top: 20px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🔍 Evidence Trace (RAG Retrieval)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="evidence-box" id="evidence-content">
+                                <!-- Retrieved chunks go here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
