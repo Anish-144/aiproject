@@ -9,8 +9,11 @@ A powerful Retrieval-Augmented Generation (RAG) tool designed to assist cybersec
 *   **MITRE ATT&CK Mapping**: Automatically maps observed behaviors to specific MITRE techniques.
 *   **Predictive Insight**: Suggests possible next moves by the attacker.
 *   **Dual Interface**:
-    *   **Web Dashboard**: A clean, modern Flask-based web interface for easy interaction.
-    *   **CLI Mode**: A standalone script for quick terminal-based analysis.
+    *   **Security Analyst Tab**: Standard event-based analysis with MITRE mapping and predictive insights.
+    *   **Network Analyzer Tab**: Dedicated interface for parsing raw network logs (firewall, PCAP text), detecting anomalies, and integrity checking.
+*   **Specialized Chatbots**:
+    *   **Network Specialist Agent**: A context-aware chatbot that answers questions specifically about the network logs being analyzed.
+*   **Web Dashboard**: A clean, modern Flask-based web interface for easy interaction.
 *   **Transparency**: Shows the exact context retrieved from the knowledge base that influenced the AI's decision.
 
 ## 🛠️ Prerequisites
@@ -54,7 +57,16 @@ The web interface provides a user-friendly way to input events and view structur
     ```
 2.  Open your browser and navigate to:
     `http://127.0.0.1:5000`
-3.  Enter a security event description (e.g., "Powershell script decoding base64 commands") and click "Analyze".
+
+3.  **Security Analysis Mode**:
+    *   Click the **"Security Analyst"** tab.
+    *   Enter a security event description (e.g., "Powershell script decoding base64 commands") and click "Initiate Analysis".
+
+4.  **Network Analysis Mode**:
+    *   Click the **"Network Analyzer"** tab.
+    *   Paste raw network logs (e.g., firewall drop logs, SSH attempts).
+    *   Click "Analyze Logs" to get a breakdown of Source/Dest IPs, Protocols, and Anomalies.
+    *   Use the **Network Specialist Chat** on the left to ask specific questions about the traffic (e.g., "Is this a brute force attack?").
 
 ### Option 2: Command Line Interface
 For quick tests or batch processing integration.
@@ -67,9 +79,10 @@ For quick tests or batch processing integration.
 
 ## 📂 Project Structure
 
-*   **`app.py`**: The Flask web application entry point. Handles routes and API endpoints.
+*   **`app.py`**: The Flask web application entry point. Handles routes (`/analyze`, `/analyze_network`, `/chat_network`) and API endpoints.
 *   **`main.py`**: A standalone script to run the reasoning engine in CLI mode.
-*   **`rag_engine.py`**: Core logic for the RAG pipeline. detailed prompt construction, LLL interaction, and response parsing.
+*   **`rag_engine.py`**: Core logic for the **Security Analyst** RAG pipeline.
+*   **`network_rag_engine.py`**: Dedicated RAG logic for the **Network Analyzer**, including log parsing and the specialized chatbot.
 *   **`vector_store.py`**: Manages the FAISS vector database creation and retrieval.
 *   **`knowledge_loader.py`**: Utilities for loading and splitting documents from the `data/` directory.
 *   **`requirements.txt`**: List of Python dependencies.
@@ -79,7 +92,7 @@ For quick tests or batch processing integration.
 ## 🔧 Configuration
 
 *   **Knowledge Base**: To add more knowledge, simply add `.txt` files to the `data/` directory. The system automatically re-indexes them on startup.
-*   **Model**: The project is configured to use `gemini-flash-latest`. You can modify `rag_engine.py` to use other models.
+*   **Model**: The project is configured to use `gemini-flash-latest`. You can modify `rag_engine.py` or `network_rag_engine.py` to use other models.
 
 ## 🔍 Troubleshooting
 

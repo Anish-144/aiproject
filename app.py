@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from knowledge_loader import load_and_split_documents
 from vector_store import create_vector_db
 from rag_engine import process_query
+from network_rag_engine import analyze_network_logs, chat_with_network_rag
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +64,43 @@ def analyze():
         
         # Safe JSON serialization by ensuring all numpy types are converted
         return jsonify(convert_numpy_types(result))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/analyze_network', methods=['POST'])
+def analyze_network():
+    global vector_db
+    if not vector_db:
+        return jsonify({"error": "Knowledge base not initialized."}), 500
+    
+    data = request.json
+    log_data = data.get('log_data')
+    
+    if not log_data:
+        return jsonify({"error": "No log data provided."}), 400
+    
+    try:
+        result = analyze_network_logs(log_data, vector_db)
+        return jsonify(convert_numpy_types(result))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/chat_network', methods=['POST'])
+def chat_network():
+    global vector_db
+    if not vector_db:
+        return jsonify({"error": "Knowledge base not initialized."}), 500
+    
+    data = request.json
+    query = data.get('query')
+    log_context = data.get('log_context')
+    
+    if not query:
+        return jsonify({"error": "No query provided."}), 400
+        
+    try:
+        response = chat_with_network_rag(query, log_context or "No specific log context provided.", vector_db)
+        return jsonify({"response": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

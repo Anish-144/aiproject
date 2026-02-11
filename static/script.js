@@ -173,6 +173,152 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300);
         });
 
-        historyList.prepend(item);
     }
+
+    // --- Tab Navigation ---
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            tabContents.forEach(c => c.classList.add('hidden'));
+
+            // Activate clicked
+            const tabId = btn.getAttribute('data-tab');
+            btn.classList.add('active');
+            const target = document.getElementById(`tab-${tabId}`);
+            target.classList.remove('hidden');
+            target.classList.add('active');
+        });
+    });
+
+    // --- Network Analyzer Logic ---
+    const netInput = document.getElementById('network-input');
+    const netAnalyzeBtn = document.getElementById('analyze-network-btn');
+    const netClearBtn = document.getElementById('clear-network-btn');
+    const netLoading = document.getElementById('network-loading');
+    const netResults = document.getElementById('network-results');
+
+    // Chat vars
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatHistory = document.getElementById('chat-history');
+
+    let currentLogContext = "";
+
+    if (netAnalyzeBtn) {
+        netAnalyzeBtn.addEventListener('click', async () => {
+            const logs = netInput.value.trim();
+            if (!logs) return;
+
+            currentLogContext = logs;
+
+            // UI Reset
+            netResults.classList.add('hidden');
+            netLoading.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/analyze_network', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ log_data: logs })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                updateNetworkUI(data.analysis);
+
+            } catch (err) {
+                console.error(err);
+                alert('Failed to analyze network logs.');
+            } finally {
+                netLoading.classList.add('hidden');
+                netResults.classList.remove('hidden');
+            }
+        });
+    }
+
+    if (netClearBtn) {
+        netClearBtn.addEventListener('click', () => {
+            netInput.value = '';
+            netResults.classList.add('hidden');
+            currentLogContext = "";
+            chatHistory.innerHTML = '<div class="chat-message system">Analysis complete. I am ready to answer questions about these logs.</div>';
+        });
+    }
+
+    function updateNetworkUI(analysis) {
+        document.getElementById('net-source-ip').textContent = analysis.source_ip;
+        document.getElementById('net-dest-ip').textContent = analysis.destination_ip;
+        document.getElementById('net-protocol').textContent = analysis.protocol;
+        document.getElementById('net-recommendation').textContent = analysis.recommended_action;
+
+        const anomaliesList = document.getElementById('net-anomalies');
+        anomaliesList.innerHTML = '';
+        analysis.anomalies.forEach(anom => {
+            const li = document.createElement('li');
+            li.textContent = `• ${anom}`;
+            anomaliesList.appendChild(li);
+        });
+
+        // Reset Chat
+        chatHistory.innerHTML = '<div class="chat-message system">Analysis complete. I am ready to answer questions about these logs.</div>';
+    }
+
+    // --- Network Chat Logic ---
+    async function sendChatMessage() {
+        const query = chatInput.value.trim();
+        if (!query) return;
+
+        // Add User Message
+        appendMessage(query, 'user');
+        chatInput.value = '';
+
+        try {
+            const response = await fetch('/chat_network', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: query,
+                    log_context: currentLogContext
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                appendMessage("Error: " + data.error, 'system');
+            } else {
+                appendMessage(data.response, 'system');
+            }
+
+        } catch (err) {
+            console.error(err);
+            appendMessage("Failed to send message.", 'system');
+        }
+    }
+
+    if (chatSendBtn) {
+        chatSendBtn.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+    }
+
+    function appendMessage(text, type) {
+        const div = document.createElement('div');
+        div.className = `chat-message ${type}`;
+        div.textContent = text;
+        chatHistory.appendChild(div);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
 });
