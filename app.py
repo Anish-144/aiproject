@@ -6,6 +6,8 @@ from knowledge_loader import load_and_split_documents
 from vector_store import create_vector_db
 from rag_engine import process_query
 from network_rag_engine import analyze_network_logs, chat_with_network_rag
+from report_generator import generate_text_report
+from metrics_tracker import log_incident, get_metrics_summary
 
 # Load environment variables
 load_dotenv()
@@ -14,6 +16,15 @@ app = Flask(__name__)
 
 # Global variables for the knowledge base
 vector_db = None
+
+# Global Metrics Store (In-Memory)
+metrics_store = {
+    "total_incidents": 0,
+    "confidence_scores": [],
+    "mitre_distribution": {},
+    "severity_distribution": {},
+    "incident_timestamps": []
+}
 
 def convert_numpy_types(obj):
     """
@@ -62,6 +73,39 @@ def analyze():
         # result contains "analysis" (the JSON from LLM) and "retrieved_docs"
         result = process_query(event_description, vector_db)
         
+        # Log to Metrics (File-based)
+        log_incident(result["analysis"])
+        
+        # Update In-Memory Metrics Store
+        try:
+            from datetime import datetime
+            analysis = result["analysis"]
+            
+            metrics_store["total_incidents"] += 1
+            metrics_store["incident_timestamps"].append(datetime.now().isoformat())
+            
+            conf = analysis.get("confidence_level")
+            if conf:
+                # Store string or convert to mapped value? User asked for "confidence_score".
+                # The prompt implies a list of scores. I have levels (High/Medium/Low). 
+                # I will store the level string for now as requested by typical logic, 
+                # or better, the raw score if available. The result["analysis"] has "confidence_level".
+                # It also has "retrieval_scores" (list of floats). 
+                # The prompt says: 'If confidence_score exists: append(confidence_score)'.
+                # I will use the level as that is the singular scalar I have readily available as "confidence".
+                metrics_store["confidence_scores"].append(conf)
+            
+            techniques = analysis.get("likely_mitre_techniques", [])
+            if techniques:
+                for tech in techniques:
+                    metrics_store["mitre_distribution"][tech] = metrics_store["mitre_distribution"].get(tech, 0) + 1
+            
+            sev = analysis.get("severity_rating")
+            if sev:
+                metrics_store["severity_distribution"][sev] = metrics_store["severity_distribution"].get(sev, 0) + 1
+        except Exception as e:
+            print(f"Error updating in-memory metrics: {e}")
+        
         # Safe JSON serialization by ensuring all numpy types are converted
         return jsonify(convert_numpy_types(result))
     except Exception as e:
@@ -103,6 +147,33 @@ def chat_network():
         return jsonify({"response": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/generate_report', methods=['POST'])
+def generate_report():
+    data = request.json
+    analysis_data = data.get('analysis_data')
+    original_query = data.get('original_query', 'N/A')
+    
+    if not analysis_data:
+        return jsonify({"error": "No analysis data provided."}), 400
+        
+    try:
+        report_text = generate_text_report(analysis_data, original_query)
+        return jsonify({"report_content": report_text, "filename": "incident_report.txt"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    try:
+        summary = get_metrics_summary()
+        return jsonify(convert_numpy_types(summary))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/metrics', methods=['GET'])
+def get_in_memory_metrics():
+    return jsonify(metrics_store)
 
 if __name__ == '__main__':
     initialize_knowledge_base()

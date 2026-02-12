@@ -1,0 +1,20 @@
+[
+    {
+        "timestamp": "2026-02-12T11:52:24.821411",
+        "severity": "Medium",
+        "confidence": "Low",
+        "techniques": [
+            "T1078",
+            "T1059"
+        ]
+    },
+    {
+        "timestamp": "2026-02-12T11:53:43.599791",
+        "severity": "High",
+        "confidence": "Low",
+        "techniques": [
+            "T1071",
+            "T1059"
+        ]
+    }
+]

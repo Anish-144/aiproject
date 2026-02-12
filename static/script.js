@@ -21,6 +21,48 @@ document.addEventListener('DOMContentLoaded', () => {
         "Impact"
     ];
 
+    let currentAnalysisData = null;
+    let currentQuery = "";
+
+    // Report Generation
+    const reportBtn = document.getElementById('report-btn');
+    if (reportBtn) {
+        reportBtn.addEventListener('click', async () => {
+            if (!currentAnalysisData) return;
+
+            try {
+                const response = await fetch('/generate_report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        analysis_data: currentAnalysisData,
+                        original_query: currentQuery
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    alert('Error generating report: ' + data.error);
+                    return;
+                }
+
+                // Download File
+                const blob = new Blob([data.report_content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = data.filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+            } catch (err) {
+                console.error(err);
+                alert('Failed to generate report.');
+            }
+        });
+    }
+
     analyzeBtn.addEventListener('click', async () => {
         const query = inputField.value.trim();
         if (!query) return;
@@ -44,7 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Populate UI
+            currentAnalysisData = data.analysis;
+            currentQuery = query;
             updateUI(data.analysis, data.retrieved_docs);
+
+            // Show Report Button
+            if (reportBtn) reportBtn.classList.remove('hidden');
 
             // Add to History
             addToHistory(query, data);
@@ -234,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                updateNetworkUI(data.analysis);
+                updateNetworkUI(data.analysis, data.threat_intel_enrichment);
 
             } catch (err) {
                 console.error(err);
@@ -255,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateNetworkUI(analysis) {
+    function updateNetworkUI(analysis, enrichment) {
         document.getElementById('net-source-ip').textContent = analysis.source_ip;
         document.getElementById('net-dest-ip').textContent = analysis.destination_ip;
         document.getElementById('net-protocol').textContent = analysis.protocol;
@@ -268,6 +315,34 @@ document.addEventListener('DOMContentLoaded', () => {
             li.textContent = `• ${anom}`;
             anomaliesList.appendChild(li);
         });
+
+        // Threat Intel
+        const tiContainer = document.getElementById('threat-intel-content');
+        tiContainer.innerHTML = '';
+
+        if (enrichment && enrichment.length > 0) {
+            enrichment.forEach(item => {
+                let color = "var(--text-primary)";
+                if (item.reputation === "Malicious") color = "var(--accent-red)";
+                if (item.reputation === "Suspicious") color = "var(--accent-orange)";
+
+                const div = document.createElement('div');
+                div.style.marginBottom = "10px";
+                div.style.padding = "10px";
+                div.style.background = "rgba(255,255,255,0.05)";
+                div.style.borderRadius = "4px";
+                div.innerHTML = `
+                    <div style="font-weight:bold; color: var(--accent-cyan);">${item.ip}</div>
+                    <div style="font-size: 0.85rem;">
+                        <span style="color: ${color}">[${item.reputation}]</span> 
+                        ${item.country || 'N/A'} - ${item.asn || 'N/A'}
+                    </div>
+                `;
+                tiContainer.appendChild(div);
+            });
+        } else {
+            tiContainer.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.9rem;">No Intelligence Data Available (Internal or N/A)</div>';
+        }
 
         // Reset Chat
         chatHistory.innerHTML = '<div class="chat-message system">Analysis complete. I am ready to answer questions about these logs.</div>';
@@ -320,5 +395,111 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory.appendChild(div);
         chatHistory.scrollTop = chatHistory.scrollHeight;
     }
+
+    // --- Metrics Tab Logic ---
+    let techniqueChart = null;
+    let severityChart = null;
+    let timelineChart = null;
+
+    async function loadMetrics() {
+        try {
+            const response = await fetch('/metrics');
+            const data = await response.json();
+
+            if (data.error) return;
+
+            // Update Summary Stats
+            document.getElementById('metric-total-incidents').textContent = data.total_incidents;
+            document.getElementById('metric-avg-confidence').textContent = data.avg_confidence + '%';
+
+            // Render Charts
+            renderCharts(data);
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function renderCharts(data) {
+        // Technique Chart (Pie)
+        const techCtx = document.getElementById('techniqueChart').getContext('2d');
+        if (techniqueChart) techniqueChart.destroy();
+        techniqueChart = new Chart(techCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(data.technique_dist),
+                datasets: [{
+                    data: Object.values(data.technique_dist),
+                    backgroundColor: ['#00f2ea', '#ff0050', '#7dff00', '#be00ff', '#ffffff']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'right', labels: { color: '#e0e0e0' } } } }
+        });
+
+        // Severity Chart (Bar)
+        const sevCtx = document.getElementById('severityChart').getContext('2d');
+        if (severityChart) severityChart.destroy();
+        severityChart = new Chart(sevCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.severity_dist),
+                datasets: [{
+                    label: 'Incidents',
+                    data: Object.values(data.severity_dist),
+                    backgroundColor: ['#ff0050', '#ff8c00', '#00f2ea', '#7dff00']
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { ticks: { color: '#e0e0e0' }, grid: { color: '#333' } },
+                    x: { ticks: { color: '#e0e0e0' }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Timeline (Line)
+        const timeCtx = document.getElementById('timelineChart').getContext('2d');
+        if (timelineChart) timelineChart.destroy();
+
+        // Group by Date for timeline (simple aggregation)
+        const timelineData = {};
+        // data.timeline is a list of ISO strings
+        data.timeline.forEach(ts => {
+            const date = ts.split("T")[0];
+            timelineData[date] = (timelineData[date] || 0) + 1;
+        });
+
+        timelineChart = new Chart(timeCtx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(timelineData),
+                datasets: [{
+                    label: 'Incidents per Day',
+                    data: Object.values(timelineData),
+                    borderColor: '#00f2ea',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { ticks: { color: '#e0e0e0' }, grid: { color: '#333' } },
+                    x: { ticks: { color: '#e0e0e0' }, grid: { display: false } }
+                },
+                plugins: { legend: { labels: { color: '#e0e0e0' } } }
+            }
+        });
+    }
+
+    // Trigger load on tab click
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.getAttribute('data-tab') === 'metrics') {
+                loadMetrics();
+            }
+        });
+    });
 
 });

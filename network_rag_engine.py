@@ -4,6 +4,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
+from threat_intel import enrich_ip
 
 # Define the expected data structure for the Network Analysis output
 class NetworkAnalysis(BaseModel):
@@ -69,8 +70,21 @@ def analyze_network_logs(log_data: str, vector_db) -> Dict[str, Any]:
     
     try:
         analysis_json = chain.invoke({"log_data": log_data, "context": context_text})
+        
+        # --- Threat Intelligence Enrichment ---
+        src_ip = analysis_json.get("source_ip", "N/A")
+        dest_ip = analysis_json.get("destination_ip", "N/A")
+        
+        enrichment_data = []
+        if src_ip and src_ip != "N/A":
+            enrichment_data.append(enrich_ip(src_ip))
+            
+        if dest_ip and dest_ip != "N/A":
+            enrichment_data.append(enrich_ip(dest_ip))
+            
         return {
             "analysis": analysis_json,
+            "threat_intel_enrichment": enrichment_data,
             "retrieved_context": [doc.page_content for doc in docs]
         }
     except Exception as e:
