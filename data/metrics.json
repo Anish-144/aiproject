@@ -16,5 +16,23 @@
             "T1071",
             "T1059"
         ]
+    },
+    {
+        "timestamp": "2026-02-12T12:16:21.094218",
+        "severity": "High",
+        "confidence": "Low",
+        "techniques": [
+            "T1059",
+            "T1071",
+            "T1078"
+        ]
+    },
+    {
+        "timestamp": "2026-02-17T16:33:49.129616",
+        "severity": "Medium",
+        "confidence": "Low",
+        "techniques": [
+            "T1078"
+        ]
     }
 ]
