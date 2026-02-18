@@ -34,5 +34,16 @@
         "techniques": [
             "T1078"
         ]
+    },
+    {
+        "timestamp": "2026-02-17T16:45:54.337596",
+        "severity": "High",
+        "confidence": "Low",
+        "techniques": [
+            "T1040",
+            "T1020",
+            "T1041",
+            "T1557"
+        ]
     }
 ]

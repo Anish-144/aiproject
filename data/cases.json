@@ -1,0 +1,80 @@
+[
+    {
+        "case_id": "CASE-9510",
+        "status": "Open",
+        "created_at": "2026-02-17 16:56:29",
+        "incident_summary": "Test ML case",
+        "severity": "High",
+        "ml_risk_score": 72.5,
+        "mitre_techniques": [
+            "T1059"
+        ],
+        "recommended_actions": [
+            "Block host"
+        ]
+    },
+    {
+        "case_id": "CASE-1994",
+        "status": "Open",
+        "created_at": "2026-02-18 15:02:13",
+        "incident_summary": "The network logs indicate a multi-stage compromise originating from 192.168.1.15. The initial outbound SMB traffic (Port 445) to an external IP is highly suspicious and characteristic of the EternalBl",
+        "severity": "High",
+        "ml_risk_score": 76.3,
+        "mitre_techniques": [
+            "T1071",
+            "T1210",
+            "T1021.001",
+            "T1021.002",
+            "T1048"
+        ],
+        "recommended_actions": [
+            "Restrict SMB/RDP access between workstations.",
+            "Implement network segmentation to contain spread.",
+            "Quarantine the affected system.",
+            "Reset credentials for involved accounts.",
+            "Review firewall logs for suspicious connections."
+        ]
+    },
+    {
+        "case_id": "CASE-9727",
+        "status": "Open",
+        "created_at": "2026-02-18 15:22:54",
+        "incident_summary": "The network logs indicate a multi-stage compromise originating from 192.168.1.15. The initial outbound SMB traffic (Port 445) to an external IP is highly suspicious and characteristic of the EternalBl",
+        "severity": "High",
+        "ml_risk_score": 76.3,
+        "mitre_techniques": [
+            "T1071",
+            "T1210",
+            "T1021.001",
+            "T1021.002",
+            "T1048"
+        ],
+        "recommended_actions": [
+            "Review firewall logs for suspicious connections.",
+            "Restrict SMB/RDP access between workstations.",
+            "Implement network segmentation to contain spread.",
+            "Reset credentials for involved accounts.",
+            "Quarantine the affected system."
+        ]
+    },
+    {
+        "case_id": "CASE-8633",
+        "status": "Open",
+        "created_at": "2026-02-18 15:27:25",
+        "incident_summary": "The network logs indicate a multi-stage attack originating from internal host 192.168.1.25. The host first establishes multiple outbound connections to various external IP addresses using common appli",
+        "severity": "High",
+        "ml_risk_score": 70.9,
+        "mitre_techniques": [
+            "T1071",
+            "T1105",
+            "T1059"
+        ],
+        "recommended_actions": [
+            "Review firewall logs for suspicious connections.",
+            "Review script execution history.",
+            "Disable PowerShell/CMD execution for non-admin users.",
+            "Reset credentials for involved accounts.",
+            "Quarantine the affected system."
+        ]
+    }
+]

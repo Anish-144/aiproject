@@ -1,40 +1,29 @@
 import os
+import json
 import numpy as np
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 from knowledge_loader import load_and_split_documents
 from vector_store import create_vector_db
-from rag_engine import process_query
-from network_rag_engine import analyze_network_logs, chat_with_network_rag
-from report_generator import generate_text_report
-from metrics_tracker import log_incident, get_metrics_summary
+from rag_engine import process_query, security_chat, log_qa
 from defensive_logic import generate_defense_actions
+from ml_engine import risk_predictor, behavior_profiler
+from geo_intel import extract_and_enrich_geo
+from report_generator import generate_investigation_report
+import case_manager
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Global variables for the knowledge base
+# Global variables
 vector_db = None
+last_analysis = None  # Stores last analysis context for Q&A and report generation
 
-# Global Metrics Store (In-Memory)
-metrics_store = {
-    "total_incidents": 0,
-    "confidence_scores": [],
-    "mitre_distribution": {},
-    "severity_distribution": {},
-    "incident_timestamps": []
-}
-
-# Case Management Store
-cases_store = []
 
 def convert_numpy_types(obj):
-    """
-    Recursively convert NumPy types to standard Python types.
-    This is necessary because Flask's jsonify cannot handle numpy.float32, etc.
-    """
+    """Recursively convert NumPy types to standard Python types."""
     if isinstance(obj, dict):
         return {k: convert_numpy_types(v) for k, v in obj.items()}
     elif isinstance(obj, list):
@@ -43,13 +32,14 @@ def convert_numpy_types(obj):
         return obj.item()
     return obj
 
+
 def initialize_knowledge_base():
     """Initializes the vector store on startup."""
     global vector_db
     print("--- Initializing Knowledge Base ---")
     base_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(base_dir, "data")
-    
+
     if os.path.exists(data_dir):
         documents = load_and_split_documents(data_dir)
         vector_db = create_vector_db(documents)
@@ -57,226 +47,214 @@ def initialize_knowledge_base():
     else:
         print(f"Error: Data directory {data_dir} not found.")
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    global vector_db
+
+# =====================================================================
+# TAB 1 — AI LOG INTELLIGENCE AGENT
+# Supports: JSON body OR multipart file upload
+# Returns: analysis + geo_data + auto-case info
+# =====================================================================
+@app.route('/api/log-intelligence', methods=['POST'])
+def log_intelligence():
+    global vector_db, last_analysis
     if not vector_db:
         return jsonify({"error": "Knowledge base not initialized."}), 500
-    
-    data = request.json
-    event_description = data.get('event_description')
-    
-    if not event_description:
-        return jsonify({"error": "No event description provided."}), 400
-    
+
+    # --- Extract log text from JSON body or file upload ---
+    event_description = None
+
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        # File upload mode
+        uploaded_file = request.files.get('log_file')
+        if uploaded_file and uploaded_file.filename:
+            try:
+                event_description = uploaded_file.read().decode('utf-8', errors='replace')
+            except Exception as e:
+                return jsonify({"error": f"Failed to read file: {str(e)}"}), 400
+        # Also check for text field in form data
+        if not event_description:
+            event_description = request.form.get('event_description')
+    else:
+        # JSON mode (existing behavior)
+        data = request.json or {}
+        event_description = data.get('event_description')
+
+    if not event_description or not event_description.strip():
+        return jsonify({"error": "No event description or log file provided."}), 400
+
     try:
-        # result contains "analysis" (the JSON from LLM) and "retrieved_docs"
+        # RAG-based analysis
         result = process_query(event_description, vector_db)
-        
+
+        if "error" in result and "analysis" not in result:
+            return jsonify({"error": result["error"]}), 500
+
+        analysis = result["analysis"]
+
         # Generate Defensive Actions
         actions = generate_defense_actions(
-            result["analysis"].get("severity_rating", "Unknown"),
-            result["analysis"].get("likely_mitre_techniques", [])
+            analysis.get("severity_rating", "Unknown"),
+            analysis.get("likely_mitre_techniques", [])
         )
-        result["analysis"]["recommended_actions"] = actions
+        analysis["recommended_actions"] = actions
 
-        # Log to Metrics (File-based)
-        log_incident(result["analysis"])
-        
-        # Update In-Memory Metrics Store
-        try:
-            from datetime import datetime
-            analysis = result["analysis"]
-            
-            metrics_store["total_incidents"] += 1
-            metrics_store["incident_timestamps"].append(datetime.now().isoformat())
-            
-            conf = analysis.get("confidence_level")
-            if conf:
-                # Store string or convert to mapped value? User asked for "confidence_score".
-                # The prompt implies a list of scores. I have levels (High/Medium/Low). 
-                # I will store the level string for now as requested by typical logic, 
-                # or better, the raw score if available. The result["analysis"] has "confidence_level".
-                # It also has "retrieval_scores" (list of floats). 
-                # The prompt says: 'If confidence_score exists: append(confidence_score)'.
-                # I will use the level as that is the singular scalar I have readily available as "confidence".
-                metrics_store["confidence_scores"].append(conf)
-            
-            techniques = analysis.get("likely_mitre_techniques", [])
-            if techniques:
-                for tech in techniques:
-                    metrics_store["mitre_distribution"][tech] = metrics_store["mitre_distribution"].get(tech, 0) + 1
-            
-            sev = analysis.get("severity_rating")
-            if sev:
-                metrics_store["severity_distribution"][sev] = metrics_store["severity_distribution"].get(sev, 0) + 1
-        except Exception as e:
-            print(f"Error updating in-memory metrics: {e}")
-        
-        # Safe JSON serialization by ensuring all numpy types are converted
+        # ML Risk Prediction
+        ml_risk = risk_predictor.predict(analysis)
+        analysis["ml_risk_score"] = ml_risk
+
+        # Behavioral Anomaly Detection
+        anomaly_score = behavior_profiler.update_and_score(analysis)
+        analysis["behavior_anomaly_score"] = anomaly_score
+
+        # --- IP Geo Enrichment ---
+        geo_data = extract_and_enrich_geo(event_description)
+        result["geo_data"] = geo_data
+
+        # --- Auto Case Creation ---
+        has_malicious_ioc = False
+        ioc_data = result.get("threat_intel_enrichment", [])
+        if isinstance(ioc_data, list):
+            for ioc in ioc_data:
+                if isinstance(ioc, dict) and ioc.get("reputation") == "Malicious":
+                    has_malicious_ioc = True
+                    break
+        # Also check geo data for malicious IPs
+        for g in geo_data:
+            if g.get("risk") == "Malicious":
+                has_malicious_ioc = True
+                break
+
+        auto_case_created = False
+        auto_case_id = None
+
+        if ml_risk > 70 or anomaly_score > 70 or has_malicious_ioc:
+            case_data = {
+                "incident_summary": (analysis.get("attack_explanation") or "N/A")[:200],
+                "severity": analysis.get("severity_rating", "Unknown"),
+                "ml_risk_score": ml_risk,
+                "anomaly_score": anomaly_score,
+                "mitre_techniques": analysis.get("likely_mitre_techniques", []),
+                "recommended_actions": actions
+            }
+            new_case = case_manager.create_case(case_data)
+            auto_case_created = True
+            auto_case_id = new_case.get("case_id")
+
+        result["auto_case_created"] = auto_case_created
+        result["auto_case_id"] = auto_case_id
+
+        # --- Store for Q&A and Report ---
+        last_analysis = {
+            "logs": event_description,
+            "analysis": analysis,
+            "geo_data": geo_data
+        }
+
         return jsonify(convert_numpy_types(result))
     except Exception as e:
+        print(f"[Log Intelligence] Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/analyze_network', methods=['POST'])
-def analyze_network():
+
+# =====================================================================
+# TAB 2 — SECURITY KNOWLEDGE CHATBOT
+# =====================================================================
+@app.route('/api/security-chat', methods=['POST'])
+def security_chat_endpoint():
     global vector_db
     if not vector_db:
         return jsonify({"error": "Knowledge base not initialized."}), 500
-    
-    data = request.json
-    log_data = data.get('log_data')
-    
-    if not log_data:
-        return jsonify({"error": "No log data provided."}), 400
-    
-    try:
-        result = analyze_network_logs(log_data, vector_db)
-        
-        # Generate Defensive Actions (Network context)
-        # Note: network_rag_engine returns "analysis" with "anomalies" list
-        analysis = result.get("analysis", {})
-        actions = generate_defense_actions(
-            analysis.get("severity", "Unknown"), 
-            [], # No MITRE mapping in network direct output currently, passing empty
-            analysis.get("anomalies", [])
-        )
-        result["analysis"]["recommended_actions"] = actions
-        
-        return jsonify(convert_numpy_types(result))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-@app.route('/chat_network', methods=['POST'])
-def chat_network():
-    global vector_db
-    if not vector_db:
-        return jsonify({"error": "Knowledge base not initialized."}), 500
-    
     data = request.json
     query = data.get('query')
-    log_context = data.get('log_context')
-    
+
     if not query:
         return jsonify({"error": "No query provided."}), 400
-        
+
     try:
-        response = chat_with_network_rag(query, log_context or "No specific log context provided.", vector_db)
+        response = security_chat(query, vector_db)
         return jsonify({"response": response})
     except Exception as e:
+        print(f"[Security Chat] Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/generate_report', methods=['POST'])
-def generate_report():
-    data = request.json
-    analysis_data = data.get('analysis_data')
-    original_query = data.get('original_query', 'N/A')
-    
-    if not analysis_data:
-        return jsonify({"error": "No analysis data provided."}), 400
-        
-    try:
-        report_text = generate_text_report(analysis_data, original_query)
-        return jsonify({"report_content": report_text, "filename": "incident_report.txt"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-@app.route('/metrics', methods=['GET'])
-def metrics():
-    try:
-        summary = get_metrics_summary()
-        return jsonify(convert_numpy_types(summary))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/metrics', methods=['GET'])
-def get_in_memory_metrics():
-    # Compute avg confidence from stored string levels
-    scores = metrics_store["confidence_scores"]
-    avg = 0
-    if scores:
-        level_map = {"High": 90, "Medium": 60, "Low": 30}
-        numeric = [level_map.get(s, 50) for s in scores]
-        avg = round(sum(numeric) / len(numeric))
-
-    return jsonify({
-        "total_incidents": metrics_store["total_incidents"],
-        "avg_confidence": avg,
-        "technique_dist": metrics_store["mitre_distribution"],
-        "severity_dist": metrics_store["severity_distribution"],
-        "timeline": metrics_store["incident_timestamps"]
-    })
-
-# --- Case Management Endpoints ---
-
-@app.route('/api/create-case', methods=['POST'])
-def create_case():
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    import random
-    from datetime import datetime
-    
-    case_id = f"CASE-{random.randint(1000, 9999)}"
-    
-    new_case = {
-        "case_id": case_id,
-        "status": "Open",
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "incident_summary": data.get("incident_summary", "N/A"),
-        "severity": data.get("severity", "Unknown"),
-        "mitre_techniques": data.get("mitre_techniques", []),
-        "recommended_actions": data.get("recommended_actions", [])
-    }
-    
-    cases_store.append(new_case)
-    return jsonify({"message": "Case created successfully", "case_id": case_id, "case": new_case})
-
+# =====================================================================
+# TAB 3 — CASE MANAGEMENT
+# =====================================================================
 @app.route('/api/cases', methods=['GET'])
 def get_cases():
-    return jsonify(cases_store)
+    return jsonify(case_manager.get_all_cases())
+
 
 @app.route('/api/update-case-status', methods=['POST'])
 def update_case_status():
     data = request.json
     case_id = data.get("case_id")
     new_status = data.get("status")
-    
-    for case in cases_store:
-        if case["case_id"] == case_id:
-            case["status"] = new_status
-            return jsonify({"message": "Status updated", "case": case})
-            
+
+    if not case_id or not new_status:
+        return jsonify({"error": "case_id and status are required."}), 400
+
+    updated = case_manager.update_status(case_id, new_status)
+    if updated:
+        return jsonify({"message": "Status updated", "case": updated})
     return jsonify({"error": "Case not found"}), 404
 
-# --- Live Monitoring Endpoint ---
-@app.route('/api/simulate-logs', methods=['GET'])
-def simulate_logs():
-    import random
-    from datetime import datetime
-    
-    protocols = ["TCP", "UDP", "ICMP", "HTTP", "HTTPS", "SSH", "FTP"]
-    src_octets = [random.randint(1, 255) for _ in range(4)]
-    dst_octets = [random.randint(1, 255) for _ in range(4)]
-    
-    log_entry = {
-        "timestamp": datetime.now().strftime("%b %d %H:%M:%S"),
-        "source_ip": f"{src_octets[0]}.{src_octets[1]}.{src_octets[2]}.{src_octets[3]}",
-        "destination_ip": f"{dst_octets[0]}.{dst_octets[1]}.{dst_octets[2]}.{dst_octets[3]}",
-        "protocol": random.choice(protocols),
-        "bytes": random.randint(64, 4096),
-        "flags": random.choice(["SYN", "ACK", "FIN", "RST", "PSH"]) 
-    }
-    
-    # Format as raw log string for analysis
-    raw_log = f"{log_entry['timestamp']} kernel: [LOG] IN=eth0 OUT= MAC=00:00:00:00:00:00 SRC={log_entry['source_ip']} DST={log_entry['destination_ip']} PROTO={log_entry['protocol']} LEN={log_entry['bytes']} FLAGS={log_entry['flags']}"
-    
-    return jsonify({"log": raw_log, "details": log_entry})
+
+# =====================================================================
+# LOG QUESTION ANSWERING (context-aware follow-up)
+# =====================================================================
+@app.route('/api/log-qa', methods=['POST'])
+def log_qa_endpoint():
+    global vector_db, last_analysis
+    if not vector_db:
+        return jsonify({"error": "Knowledge base not initialized."}), 500
+
+    if not last_analysis:
+        return jsonify({"error": "No analysis context available. Run log analysis first."}), 400
+
+    data = request.json
+    question = data.get('question')
+
+    if not question:
+        return jsonify({"error": "No question provided."}), 400
+
+    try:
+        answer = log_qa(question, last_analysis, vector_db)
+        return jsonify({"answer": answer})
+    except Exception as e:
+        print(f"[Log QA] Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# =====================================================================
+# AUTOMATED REPORT GENERATION
+# =====================================================================
+@app.route('/api/generate-report', methods=['POST'])
+def generate_report():
+    global last_analysis
+    if not last_analysis:
+        return jsonify({"error": "No analysis context available. Run log analysis first."}), 400
+
+    try:
+        report_text = generate_investigation_report(last_analysis)
+        return Response(
+            report_text,
+            mimetype='text/plain',
+            headers={
+                'Content-Disposition': 'attachment; filename=CyberGuard_Investigation_Report.txt',
+                'Content-Type': 'text/plain; charset=utf-8'
+            }
+        )
+    except Exception as e:
+        print(f"[Report Gen] Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     initialize_knowledge_base()

@@ -4,413 +4,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberGuard AI | SOC Dashboard</title>
+    <title>CyberGuard AI | SOC Intelligence Platform</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Courier+New&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js for IP Geo Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
             <div class="logo">
-                <h2>CyberGuard <span>AI</span></h2>
+                <span class="logo-icon">🛡️</span>
+                <h1>CyberGuard <span class="accent">AI</span></h1>
             </div>
-            <div class="history-section">
-                <h3>Incident History</h3>
-                <ul id="history-list">
-                    <!-- History items will be added here -->
-                </ul>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header>
-                <h1>SOC Incident Analysis</h1>
-                <div class="tab-controls">
-                    <button class="tab-btn active" data-tab="security">Security Analyst</button>
-                    <button class="tab-btn" data-tab="network">Network Analyzer</button>
-                    <button class="tab-btn" data-tab="metrics">System Metrics</button>
-                    <button class="tab-btn" data-tab="cases">Case Management</button>
-                </div>
+            <div class="header-right">
                 <div class="status-indicator">● System Active</div>
-            </header>
-
-            <!-- ================= SECURITY TAB ================= -->
-            <div id="tab-security" class="tab-content active">
-                <!-- Input Section -->
-                <section class="input-section">
-                    <textarea id="event-input" placeholder="PASTE SECURITY LOG OR EVENT DESCRIPTION HERE..."></textarea>
-                    <div class="actions">
-                        <button id="analyze-btn" class="btn primary">Initiate Analysis</button>
-                        <button id="clear-btn" class="btn secondary">Clear</button>
-                    </div>
-                </section>
-
-                <!-- Loading Spinner -->
-                <div id="loading" class="hidden">
-                    <div style="text-align:center; padding: 40px;">
-                        <div style="color: var(--accent-cyan); font-size: 1.5rem; margin-bottom: 20px;">AI REASONING IN
-                            PROGRESS...</div>
-                        <div class="spinner"></div>
-                    </div>
-                </div>
-
-                <!-- Analysis Results -->
-                <div id="results-container" class="hidden">
-
-                    <!-- 1. Attack Timeline Flowchart -->
-                    <div class="timeline-container">
-                        <div class="section-title">Attack Lifecycle Timeline</div>
-                        <div class="timeline" id="timeline-steps">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-
-                    <!-- Dashboard Grid -->
-                    <div class="dashboard-grid">
-
-                        <!-- Left Column: Detailed Analysis -->
-                        <div class="left-panel">
-                            <!-- Threat Explanation -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>⚠️ Artificial Intelligence Reasoning</h3>
-                                </div>
-                                <div class="card-body">
-                                    <p id="attack-explanation"></p>
-                                </div>
-                            </div>
-
-                            <!-- MITRE Mapping -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>🛡️ MITRE ATT&CK Matrix</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div id="mitre-tags"></div>
-                                    <!-- Simple Visual Graph Representation -->
-                                    <div class="node-graph" id="mitre-graph"
-                                        style="margin-top:20px; border-top:1px solid var(--border-color); padding-top:20px;">
-                                        <!-- Nodes injected by JS -->
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Next Steps -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>🔮 Remediation & Next Steps</h3>
-                                </div>
-                                <div class="card-body">
-                                    <ul id="next-steps-list"
-                                        style="list-style-position: inside; color: var(--text-secondary);"></ul>
-                                </div>
-                            </div>
-
-                            <!-- Recommended Defensive Actions -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>🛡️ Recommended Defensive Actions</h3>
-                                </div>
-                                <div class="card-body">
-                                    <ul id="defensive-actions-list"
-                                        style="list-style-position: inside; color: var(--accent-orange);"></ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Column: High Level Stats -->
-                        <div class="right-panel">
-
-                            <!-- Severity Card -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>Severity Assessment</h3>
-                                </div>
-                                <div class="card-body" style="text-align: center;">
-                                    <div id="severity-badge" class="badge">PENDING</div>
-                                </div>
-                            </div>
-
-                            <!-- Confidence Card -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>AI Confidence</h3>
-                                </div>
-                                <div class="card-body" style="text-align: center;">
-                                    <div id="confidence-meter"
-                                        style="font-size: 2rem; color: var(--accent-cyan); font-weight: bold;">--%</div>
-                                    <div id="confidence-reason"
-                                        style="font-size: 0.8rem; margin-top: 10px; color: var(--text-secondary);">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Progression Status -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>Attack Progression</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="stat-item">
-                                        <span class="stat-label">CURRENT STAGE</span>
-                                        <div class="stat-value" id="current-stage-text"
-                                            style="color: var(--accent-orange);">--</div>
-                                    </div>
-                                    <div class="stat-item" style="margin-top: 20px;">
-                                        <span class="stat-label">PREDICTED NEXT MOVE</span>
-                                        <div class="stat-value" id="next-stage-text" style="color: var(--accent-pink);">
-                                            --
-                                        </div>
-                                    </div>
-                                    <div class="action-buttons" style="margin-top: 20px; display: flex; gap: 10px;">
-                                        <button id="generate-report-btn" class="btn primary" style="display: none;">
-                                            📄 Generate Report
-                                        </button>
-                                        <button id="create-case-btn" class="btn secondary"
-                                            style="display: none; background: var(--accent-orange); color: white; border: none;">
-                                            📁 Create Case
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Transparency Section -->
-                <section class="transparency-section" style="margin-top: 20px;">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>🔍 Evidence Trace (RAG Retrieval)</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="evidence-box" id="evidence-content">
-                                <!-- Retrieved chunks go here -->
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
             </div>
-            <!-- END SECURITY TAB -->
+        </header>
 
-            <!-- ================= NETWORK TAB ================= -->
-            <div id="tab-network" class="tab-content hidden">
-                <!-- Network Input -->
-                <section class="input-section">
-                    <textarea id="network-log-input"
-                        placeholder="PASTE NETWORK LOGS (PCAP TEXT, FIREWALL LOGS, ACCESS LOGS)..."
-                        style="font-family: 'Courier New', monospace; font-size: 0.85rem;"></textarea>
-                    <div class="actions">
-                        <button id="analyze-network-btn" class="btn primary">Analyze Logs</button>
-                        <button id="clear-network-btn" class="btn secondary">Clear</button>
-                        <button id="live-monitor-btn" class="btn secondary"
-                            style="border: 1px solid var(--accent-purple); color: var(--accent-purple);">
-                            📡 Start Live Monitoring
-                        </button>
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="intelligence">
+                <span class="tab-icon">🔍</span> AI Log Intelligence
+            </button>
+            <button class="tab-btn" data-tab="chatbot">
+                <span class="tab-icon">💬</span> Security Chatbot
+            </button>
+            <button class="tab-btn" data-tab="cases">
+                <span class="tab-icon">📂</span> Case Management
+            </button>
+        </nav>
+
+        <!-- ================= TAB 1: AI LOG INTELLIGENCE ================= -->
+        <div id="tab-intelligence" class="tab-content active">
+            <!-- Input Section -->
+            <section class="input-section">
+                <textarea id="log-input"
+                    placeholder="Paste security logs or describe a security event for AI analysis...&#10;&#10;Example: PowerShell process executed a base64 encoded script and initiated a connection to external IP 203.0.113.50"></textarea>
+
+                <!-- File Upload -->
+                <div class="file-upload-row">
+                    <label for="log-file-input" class="file-label">
+                        <span class="file-icon">📎</span> Upload Log File
+                    </label>
+                    <input type="file" id="log-file-input" accept=".txt,.log,.csv,.json,.syslog">
+                    <span id="file-name-display" class="file-name"></span>
+                </div>
+
+                <div class="actions">
+                    <button id="analyze-btn" class="btn primary">🔍 Analyze Logs</button>
+                    <button id="clear-btn" class="btn secondary">Clear</button>
+                </div>
+            </section>
+
+            <!-- Loading -->
+            <div id="intel-loading" class="loading-state hidden">
+                <div class="spinner"></div>
+                <p>AI REASONING IN PROGRESS...</p>
+            </div>
+
+            <!-- Results -->
+            <div id="intel-results" class="hidden">
+
+                <!-- Auto-case notification -->
+                <div id="auto-case-banner" class="case-banner hidden">
+                    <span class="banner-icon">🚨</span>
+                    <span id="auto-case-msg">Case auto-created</span>
+                </div>
+
+                <!-- Report Button -->
+                <div class="report-actions">
+                    <button id="generate-report-btn" class="btn accent-btn">📄 Generate Investigation Report</button>
+                </div>
+
+                <!-- Attack Timeline -->
+                <div class="card timeline-card">
+                    <div class="card-header">
+                        <h3>⏱️ Attack Lifecycle Timeline</h3>
                     </div>
-                </section>
-
-                <!-- Network Loading -->
-                <div id="network-loading" class="hidden">
-                    <div style="text-align:center; padding: 40px;">
-                        <div style="color: var(--accent-purple); font-size: 1.5rem; margin-bottom: 20px;">ANALYZING
-                            NETWORK TRAFFIC...</div>
-                        <div class="spinner"></div>
+                    <div class="card-body">
+                        <div class="timeline" id="timeline-steps"></div>
                     </div>
                 </div>
 
-                <!-- Network Results -->
-                <div id="network-results" class="hidden">
-                    <div class="dashboard-grid">
-                        <!-- Left: Chatbot -->
-                        <div class="left-panel">
-                            <div class="card" style="height: 600px; display: flex; flex-direction: column;">
-                                <div class="card-header">
-                                    <h3>💬 Network Specialist Agent</h3>
-                                </div>
-                                <div class="card-body"
-                                    style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
-                                    <div id="chat-history" class="chat-history">
-                                        <!-- Messages go here -->
-                                        <div class="chat-message system">
-                                            Analysis complete. I am ready to answer questions about these logs.
-                                        </div>
-                                    </div>
-                                    <div class="chat-input-area">
-                                        <input type="text" id="chat-input"
-                                            placeholder="Ask about specific IPs, ports, or anomalies...">
-                                        <button id="chat-send-btn">Send</button>
-                                    </div>
+                <!-- Main Results Grid -->
+                <div class="results-grid">
+                    <!-- Left Column -->
+                    <div class="results-left">
+                        <!-- AI Reasoning -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>⚠️ AI Reasoning</h3>
+                            </div>
+                            <div class="card-body">
+                                <p id="attack-explanation"></p>
+                            </div>
+                        </div>
+
+                        <!-- MITRE Mapping -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🛡️ MITRE ATT&CK Mapping</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="mitre-tags"></div>
+                            </div>
+                        </div>
+
+                        <!-- Remediation & Next Steps -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🔮 Remediation & Next Steps</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul id="next-steps-list"></ul>
+                            </div>
+                        </div>
+
+                        <!-- Defensive Actions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🛡️ Recommended Defensive Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul id="defensive-actions-list" class="accent-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="results-right">
+                        <!-- Severity -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Severity Assessment</h3>
+                            </div>
+                            <div class="card-body centered">
+                                <div id="severity-badge" class="badge">PENDING</div>
+                            </div>
+                        </div>
+
+                        <!-- Confidence -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>AI Confidence</h3>
+                            </div>
+                            <div class="card-body centered">
+                                <div id="confidence-meter" class="big-stat cyan">--%</div>
+                                <div id="confidence-reason" class="stat-sub"></div>
+                            </div>
+                        </div>
+
+                        <!-- ML Risk Score -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🤖 ML Risk Score</h3>
+                            </div>
+                            <div class="card-body centered">
+                                <div id="ml-risk-score" class="big-stat orange">--</div>
+                                <div class="stat-sub">RandomForest Prediction (0-100)</div>
+                                <div class="progress-bar-container">
+                                    <div id="ml-risk-bar" class="progress-bar gradient-risk"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Summary Stats -->
-                        <div class="right-panel">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>Network Integrity Summary</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="stat-item" style="margin-bottom: 15px;">
-                                        <span class="stat-label">SOURCE IP</span>
-                                        <div class="stat-value" id="net-source-ip"
-                                            style="color: var(--accent-cyan); font-size: 1rem;">N/A</div>
-                                    </div>
-                                    <div class="stat-item" style="margin-bottom: 15px;">
-                                        <span class="stat-label">DEST IP</span>
-                                        <div class="stat-value" id="net-dest-ip"
-                                            style="color: var(--accent-blue); font-size: 1rem;">N/A</div>
-                                    </div>
-                                    <div class="stat-item" style="margin-bottom: 15px;">
-                                        <span class="stat-label">PROTOCOL</span>
-                                        <div class="stat-value" id="net-protocol"
-                                            style="color: var(--text-primary); font-size: 1rem;">N/A</div>
-                                    </div>
+                        <!-- Behavior Anomaly Score -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>🧠 Behavior Anomaly</h3>
+                            </div>
+                            <div class="card-body centered">
+                                <div id="behavior-anomaly-score" class="big-stat purple">--</div>
+                                <div class="stat-sub">IsolationForest Anomaly (0-100)</div>
+                                <div class="progress-bar-container">
+                                    <div id="anomaly-bar" class="progress-bar gradient-anomaly"></div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Threat Intelligence Panel -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>🌍 Threat Intelligence</h3>
+                        <!-- Attack Progression -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Attack Progression</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="stat-item">
+                                    <span class="stat-label">CURRENT STAGE</span>
+                                    <div id="current-stage-text" class="stat-value orange">--</div>
                                 </div>
-                                <div class="card-body">
-                                    <div id="threat-intel-content">
-                                        <div style="color: var(--text-secondary); font-size: 0.9rem;">No Intelligence
-                                            Data Available</div>
-                                    </div>
+                                <div class="stat-item" style="margin-top: 16px;">
+                                    <span class="stat-label">PREDICTED NEXT MOVE</span>
+                                    <div id="next-stage-text" class="stat-value pink">--</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>Detected Anomalies</h3>
-                                </div>
-                                <div class="card-body">
-                                    <ul id="net-anomalies" style="list-style: none; color: var(--accent-red);">
-                                        <!-- List anomalies -->
-                                    </ul>
-                                </div>
-                            </div>
+                <!-- IP Geo Map -->
+                <div class="card" style="margin-top: 20px;" id="geo-map-card">
+                    <div class="card-header">
+                        <h3>🌍 IP Geo Visualization</h3>
+                        <span class="header-sub" id="geo-ip-count"></span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div id="geo-map"></div>
+                    </div>
+                </div>
 
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>Recommendation</h3>
-                                </div>
-                                <div class="card-body">
-                                    <p id="net-recommendation" style="color: var(--text-secondary); font-size: 0.9rem;">
-                                        --</p>
-                                </div>
-                            </div>
+                <!-- Evidence Trace -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3>🔍 Evidence Trace (RAG Retrieval)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="evidence-content" class="evidence-box"></div>
+                    </div>
+                </div>
 
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3>🛡️ Defensive Actions</h3>
-                                </div>
-                                <div class="card-body">
-                                    <ul id="net-defensive-actions"
-                                        style="list-style: none; color: var(--accent-orange);">
-                                        <!-- List actions -->
-                                    </ul>
-                                </div>
-                            </div>
+                <!-- Log Q&A Panel -->
+                <div class="card qa-card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3>🧠 Investigation Q&A</h3>
+                        <span class="header-sub">Ask follow-up questions about this analysis</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="qa-responses" class="qa-responses"></div>
+                        <div class="qa-input-area">
+                            <input type="text" id="qa-input"
+                                placeholder="Ask about this analysis... (e.g., Which IPs are most suspicious?)">
+                            <button id="qa-send-btn" class="btn primary">Ask</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- END NETWORK TAB -->
+        </div>
+        <!-- END TAB 1 -->
 
-            <!-- ================= METRICS TAB ================= -->
-            <div id="tab-metrics" class="tab-content hidden">
-                <!-- Top Row: Summary Cards -->
-                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-                    <div class="card" style="flex: 1; text-align: center;">
-                        <div class="card-header">
-                            <h3>Total Incidents</h3>
-                        </div>
-                        <div class="card-body">
-                            <div id="metric-total-incidents" style="font-size: 2.5rem; color: var(--accent-cyan);">
-                                --</div>
-                        </div>
+        <!-- ================= TAB 2: SECURITY CHATBOT ================= -->
+        <div id="tab-chatbot" class="tab-content hidden">
+            <div class="chatbot-container">
+                <div class="card chatbot-card">
+                    <div class="card-header">
+                        <h3>💬 Security Knowledge Assistant</h3>
+                        <span class="header-sub">Ask any cybersecurity question</span>
                     </div>
-                    <div class="card" style="flex: 1; text-align: center;">
-                        <div class="card-header">
-                            <h3>Avg Confidence</h3>
+                    <div class="card-body chatbot-body">
+                        <div id="chat-messages" class="chat-messages">
+                            <div class="chat-message system">
+                                <div class="msg-content">Welcome! I'm your Security Knowledge Assistant. Ask me about
+                                    cybersecurity concepts, attack techniques, defense strategies, compliance
+                                    frameworks, or anything security-related.</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div id="metric-avg-confidence" style="font-size: 2.5rem; color: var(--accent-purple);">
-                                --%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Attack Techniques</h3>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="techniqueChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Severity Distribution</h3>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="severityChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="card" style="grid-column: span 2;">
-                        <div class="card-header">
-                            <h3>Incident Timeline</h3>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="timelineChart"></canvas>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input"
+                                placeholder="Ask a security question... (e.g., What is SQL injection?)">
+                            <button id="chat-send-btn" class="btn primary">Send</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- END METRICS TAB -->
+        </div>
+        <!-- END TAB 2 -->
 
-            <!-- ================= CASES TAB ================= -->
-            <div id="tab-cases" class="tab-content hidden">
-                <h2 style="margin-bottom: 10px;">📂 Case Management</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">Track and manage security incidents.</p>
+        <!-- ================= TAB 3: CASE MANAGEMENT ================= -->
+        <div id="tab-cases" class="tab-content hidden">
+            <div class="cases-header">
+                <h2>📂 Case Management</h2>
+                <p class="cases-sub">Auto-generated cases from AI Log Intelligence analysis</p>
+            </div>
 
-                <div class="card">
-                    <div class="card-body" style="overflow-x: auto;">
-                        <table id="cases-table"
-                            style="width: 100%; border-collapse: collapse; color: var(--text-primary);">
-                            <thead>
-                                <tr style="background: var(--card-bg); border-bottom: 2px solid var(--border-color);">
-                                    <th style="padding: 12px; text-align: left;">Case ID</th>
-                                    <th style="padding: 12px; text-align: left;">Created At</th>
-                                    <th style="padding: 12px; text-align: left;">Severity</th>
-                                    <th style="padding: 12px; text-align: left;">Status</th>
-                                    <th style="padding: 12px; text-align: left;">Summary</th>
-                                    <th style="padding: 12px; text-align: left;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cases-table-body">
-                                <!-- Cases will be inserted here -->
-                            </tbody>
-                        </table>
+            <div class="card">
+                <div class="card-body" style="overflow-x: auto;">
+                    <table id="cases-table">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Created At</th>
+                                <th>Severity</th>
+                                <th>ML Risk</th>
+                                <th>Status</th>
+                                <th>Summary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cases-table-body">
+                        </tbody>
+                    </table>
+                    <div id="no-cases-msg" class="no-cases hidden">
+                        No cases yet. Cases are auto-created when log analysis detects high risk threats.
                     </div>
                 </div>
             </div>
-            <!-- END CASES TAB -->
+        </div>
+        <!-- END TAB 3 -->
 
-        </main>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

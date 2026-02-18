@@ -3,7 +3,7 @@ import json
 import numpy as np
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Tuple
 
@@ -230,3 +230,126 @@ def process_query(query, vector_db):
             "error": str(e),
             "raw_context": context_text
         }
+
+
+def security_chat(query: str, vector_db) -> str:
+    """
+    General security knowledge chatbot.
+    Uses RAG retrieval but returns plain conversational text, not structured analysis.
+    Independent of the log intelligence system.
+    """
+    # Retrieve relevant knowledge
+    results = vector_db.similarity_search(query, k=3)
+    context_text = "\n\n".join([doc.page_content for doc in results])
+
+    template = """
+    You are a Cybersecurity Knowledge Assistant. Answer the user's security question
+    using the provided Knowledge Base context and your general cybersecurity expertise.
+
+    Knowledge Base Context:
+    {context}
+
+    User Question: {query}
+
+    Instructions:
+    - Answer directly and concisely.
+    - If the context contains relevant information, reference it.
+    - If the question is outside the context, use your general cybersecurity knowledge.
+    - Format your response in clear, readable paragraphs.
+    - Do NOT return JSON. Return a helpful text answer.
+    """
+
+    prompt = PromptTemplate(
+        template=template,
+        input_variables=["query", "context"]
+    )
+
+    if not os.getenv("GOOGLE_API_KEY"):
+        return "Error: GOOGLE_API_KEY is not configured."
+
+    llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0.3)
+    chain = prompt | llm | StrOutputParser()
+
+    try:
+        response = chain.invoke({"query": query, "context": context_text})
+        return response
+    except Exception as e:
+        print(f"[Security Chat] Error: {e}")
+        return f"I encountered an error processing your request: {str(e)}"
+
+
+def log_qa(question: str, analysis_context: dict, vector_db) -> str:
+    """
+    Context-aware log question answering.
+    Uses the last analysis results + original logs + RAG knowledge base
+    to answer investigative follow-up questions.
+    """
+    import json
+
+    original_logs = analysis_context.get("logs", "N/A")
+    analysis = analysis_context.get("analysis", {})
+    geo_data = analysis_context.get("geo_data", [])
+
+    # Retrieve relevant knowledge
+    results = vector_db.similarity_search(question, k=2)
+    kb_context = "\n".join([doc.page_content for doc in results])
+
+    # Build structured context from analysis
+    analysis_summary = json.dumps(analysis, indent=2, default=str)
+
+    geo_summary = ""
+    if geo_data:
+        geo_summary = "External IPs detected:\n"
+        for g in geo_data:
+            geo_summary += f"  - {g['ip']} ({g.get('country','?')}) — Risk: {g.get('risk','?')}\n"
+
+    template = """
+    You are a Cybersecurity Investigation Assistant. Answer the analyst's question
+    using the provided context from a recent log analysis.
+
+    === ORIGINAL LOG DATA ===
+    {logs}
+
+    === AI ANALYSIS RESULTS ===
+    {analysis}
+
+    === GEO INTELLIGENCE ===
+    {geo_info}
+
+    === KNOWLEDGE BASE ===
+    {kb_context}
+
+    === ANALYST QUESTION ===
+    {question}
+
+    Instructions:
+    - Answer specifically using the data above.
+    - Reference specific IPs, timestamps, MITRE techniques, or scores when relevant.
+    - Be precise and evidence-based.
+    - If the data doesn't contain enough info to answer, say so clearly.
+    - Do NOT return JSON. Return a clear text answer.
+    """
+
+    prompt = PromptTemplate(
+        template=template,
+        input_variables=["logs", "analysis", "geo_info", "kb_context", "question"]
+    )
+
+    if not os.getenv("GOOGLE_API_KEY"):
+        return "Error: GOOGLE_API_KEY is not configured."
+
+    llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0.2)
+    chain = prompt | llm | StrOutputParser()
+
+    try:
+        response = chain.invoke({
+            "logs": str(original_logs)[:3000],
+            "analysis": analysis_summary[:3000],
+            "geo_info": geo_summary or "No external IPs detected.",
+            "kb_context": kb_context,
+            "question": question
+        })
+        return response
+    except Exception as e:
+        print(f"[Log QA] Error: {e}")
+        return f"Error processing your question: {str(e)}"

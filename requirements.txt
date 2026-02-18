@@ -7,3 +7,4 @@ python-dotenv
 langchain-huggingface
 langchain-google-genai
 flask
+scikit-learn
