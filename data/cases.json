@@ -76,5 +76,144 @@
             "Reset credentials for involved accounts.",
             "Quarantine the affected system."
         ]
+    },
+    {
+        "case_id": "CASE-8598",
+        "status": "Open",
+        "created_at": "2026-02-18 15:42:20",
+        "incident_summary": "The log sequence demonstrates a distributed brute-force or credential stuffing attack targeting the SSH service on port 22. Multiple distinct source IPs (5.160.55.10, 89.44.33.21, 103.200.45.12, 41.20",
+        "severity": "High",
+        "ml_risk_score": 70.9,
+        "mitre_techniques": [
+            "T1059",
+            "T1071",
+            "T1105"
+        ],
+        "recommended_actions": [
+            "Review script execution history.",
+            "Reset credentials for involved accounts.",
+            "Disable PowerShell/CMD execution for non-admin users.",
+            "Quarantine the affected system.",
+            "Review firewall logs for suspicious connections."
+        ]
+    },
+    {
+        "case_id": "CASE-1852",
+        "status": "Open",
+        "created_at": "2026-02-18 23:42:18",
+        "incident_summary": "The security logs indicate a multi-stage automated attack characterized by reconnaissance, credential brute-forcing, and injection attempts. The behavior is malicious because it involves systematic pr",
+        "severity": "High",
+        "ml_risk_score": 73.6,
+        "mitre_techniques": [
+            "T1059",
+            "T1110",
+            "T1190",
+            "T1595",
+            "T1071"
+        ],
+        "recommended_actions": [
+            "Reset credentials for involved accounts.",
+            "Review script execution history.",
+            "Disable PowerShell/CMD execution for non-admin users.",
+            "Check web server logs for exploitation attempts.",
+            "Patch the vulnerable application immediately.",
+            "Review firewall logs for suspicious connections.",
+            "Quarantine the affected system."
+        ]
+    },
+    {
+        "case_id": "CASE-1852",
+        "status": "Open",
+        "created_at": "2026-02-19 09:30:09",
+        "incident_summary": "The security events indicate a multi-stage attack targeting authentication interfaces. It begins with a high-volume automated brute-force attack using 'BruteBot/2.1' against multiple system accounts (",
+        "severity": "High",
+        "ml_risk_score": 70.4,
+        "mitre_techniques": [
+            "T1190",
+            "T1078",
+            "T1059",
+            "T1071"
+        ],
+        "recommended_actions": [
+            "Force password reset for all affected users.",
+            "Check web server logs for exploitation attempts.",
+            "Audit authentication logs for unauthorized access.",
+            "Reset credentials for involved accounts.",
+            "Quarantine the affected system.",
+            "Review script execution history.",
+            "Patch the vulnerable application immediately.",
+            "Disable PowerShell/CMD execution for non-admin users.",
+            "Review firewall logs for suspicious connections."
+        ]
+    },
+    {
+        "case_id": "CASE-1852",
+        "status": "Open",
+        "created_at": "2026-02-19 12:16:29",
+        "incident_summary": "The security events indicate a multi-stage attack targeting authentication interfaces. It begins with a high-volume automated brute-force attack using 'BruteBot/2.1' against multiple system accounts (",
+        "severity": "High",
+        "ml_risk_score": 70.4,
+        "mitre_techniques": [
+            "T1190",
+            "T1078",
+            "T1059",
+            "T1071"
+        ],
+        "recommended_actions": [
+            "Audit authentication logs for unauthorized access.",
+            "Reset credentials for involved accounts.",
+            "Patch the vulnerable application immediately.",
+            "Force password reset for all affected users.",
+            "Quarantine the affected system.",
+            "Check web server logs for exploitation attempts.",
+            "Review firewall logs for suspicious connections.",
+            "Review script execution history.",
+            "Disable PowerShell/CMD execution for non-admin users."
+        ]
+    },
+    {
+        "case_id": "CASE-1852",
+        "status": "Open",
+        "created_at": "2026-02-19 12:19:29",
+        "incident_summary": "The security events indicate a multi-stage attack targeting authentication interfaces. It begins with a high-volume automated brute-force attack using 'BruteBot/2.1' against multiple system accounts (",
+        "severity": "High",
+        "ml_risk_score": 70.4,
+        "mitre_techniques": [
+            "T1190",
+            "T1078",
+            "T1059",
+            "T1071"
+        ],
+        "recommended_actions": [
+            "Audit authentication logs for unauthorized access.",
+            "Reset credentials for involved accounts.",
+            "Patch the vulnerable application immediately.",
+            "Force password reset for all affected users.",
+            "Quarantine the affected system.",
+            "Check web server logs for exploitation attempts.",
+            "Review firewall logs for suspicious connections.",
+            "Review script execution history.",
+            "Disable PowerShell/CMD execution for non-admin users."
+        ]
+    },
+    {
+        "case_id": "CASE-8633",
+        "status": "Open",
+        "created_at": "2026-02-19 12:20:24",
+        "incident_summary": "The network logs reveal a highly suspicious beaconing pattern, with connections occurring at a precise 30-second interval (08:00:01, 08:00:31, 08:01:01, etc.). This regularity is characteristic of aut",
+        "severity": "High",
+        "ml_risk_score": 67.5,
+        "mitre_techniques": [
+            "T1071",
+            "T1059",
+            "T1105"
+        ],
+        "recommended_actions": [
+            "Reset credentials for involved accounts.",
+            "Quarantine the affected system.",
+            "Review firewall logs for suspicious connections.",
+            "Review script execution history.",
+            "Disable PowerShell/CMD execution for non-admin users."
+        ]
     }
 ]

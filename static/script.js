@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ========== TAB NAVIGATION ==========
-    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabBtns = document.querySelectorAll('.soc-tab');
     const tabContents = document.querySelectorAll('.tab-content');
 
     tabBtns.forEach(btn => {
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Severity Badge
         const sevBadge = getEl('severity-badge');
         if (sevBadge) {
-            sevBadge.className = 'badge';
+            sevBadge.className = 'kpi-badge';
             if (analysis.severity_rating) {
                 sevBadge.classList.add(analysis.severity_rating.toLowerCase());
                 sevBadge.textContent = analysis.severity_rating;
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (mapCard) mapCard.style.display = 'block';
-        if (countEl) countEl.textContent = `${geoData.length} external IP(s) detected`;
+        if (countEl) countEl.textContent = geoData.length;
 
         // Destroy previous map if exists
         if (geoMap) {

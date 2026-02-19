@@ -5,289 +5,437 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberGuard AI | SOC Intelligence Platform</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <!-- Leaflet.js for IP Geo Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="logo">
-                <span class="logo-icon">🛡️</span>
-                <h1>CyberGuard <span class="accent">AI</span></h1>
-            </div>
-            <div class="header-right">
-                <div class="status-indicator">● System Active</div>
-            </div>
-        </header>
 
-        <!-- Tab Navigation -->
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="intelligence">
-                <span class="tab-icon">🔍</span> AI Log Intelligence
+    <!-- ===== LEFT SIDEBAR ===== -->
+    <aside class="sidebar" id="app-sidebar">
+        <div class="sidebar-brand">
+            <svg class="sidebar-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <div class="sidebar-brand-text">
+                <span class="brand-name">CyberGuard <span class="brand-accent">AI</span></span>
+                <span class="brand-tag">INTELLIGENCE PLATFORM</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="soc-tab sidebar-nav-item active" data-tab="intelligence">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                </svg>
+                <span class="nav-label">Log Intelligence</span>
             </button>
-            <button class="tab-btn" data-tab="chatbot">
-                <span class="tab-icon">💬</span> Security Chatbot
+            <button class="soc-tab sidebar-nav-item" data-tab="chatbot">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span class="nav-label">Security Chat</span>
             </button>
-            <button class="tab-btn" data-tab="cases">
-                <span class="tab-icon">📂</span> Case Management
+            <button class="soc-tab sidebar-nav-item" data-tab="cases">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                <span class="nav-label">Case Management</span>
             </button>
         </nav>
 
-        <!-- ================= TAB 1: AI LOG INTELLIGENCE ================= -->
-        <div id="tab-intelligence" class="tab-content active">
-            <!-- Input Section -->
-            <section class="input-section">
-                <textarea id="log-input"
-                    placeholder="Paste security logs or describe a security event for AI analysis...&#10;&#10;Example: PowerShell process executed a base64 encoded script and initiated a connection to external IP 203.0.113.50"></textarea>
+        <div class="sidebar-footer">
+            <div class="sidebar-version">v2.1 — SOC Engine</div>
+        </div>
+    </aside>
 
-                <!-- File Upload -->
-                <div class="file-upload-row">
-                    <label for="log-file-input" class="file-label">
-                        <span class="file-icon">📎</span> Upload Log File
-                    </label>
-                    <input type="file" id="log-file-input" accept=".txt,.log,.csv,.json,.syslog">
-                    <span id="file-name-display" class="file-name"></span>
+    <!-- ===== SIDEBAR TOGGLE (mobile) ===== -->
+    <button class="sidebar-toggle" id="sidebar-toggle"
+        onclick="document.getElementById('app-sidebar').classList.toggle('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+    </button>
+
+    <!-- ===== MAIN WRAPPER ===== -->
+    <div class="main-wrapper">
+
+        <!-- ===== TOP HEADER BAR ===== -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="topbar-title" id="page-title">Log Intelligence</h1>
+            </div>
+            <div class="topbar-center">
+                <div class="topbar-search">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        width="16" height="16">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <input type="text" placeholder="Search threats, IPs, techniques..." class="search-input" />
                 </div>
+            </div>
+            <div class="topbar-right">
+                <button class="topbar-icon-btn" title="Notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    <span class="notif-dot"></span>
+                </button>
+                <div class="topbar-status">
+                    <span class="soc-status-dot"></span>
+                    <span class="soc-status-text">Operational</span>
+                </div>
+            </div>
+        </header>
 
-                <div class="actions">
-                    <button id="analyze-btn" class="btn primary">🔍 Analyze Logs</button>
-                    <button id="clear-btn" class="btn secondary">Clear</button>
+        <!-- ============================================================
+             TAB 1 — LOG INTELLIGENCE
+             ============================================================ -->
+        <div id="tab-intelligence" class="tab-content active">
+
+            <!-- SECTION 1: Upload Area -->
+            <section class="soc-upload-section">
+                <div class="upload-inner">
+                    <textarea id="log-input"
+                        placeholder="Paste logs or describe a security event...&#10;&#10;Example: Suspicious PowerShell execution detected from host 10.0.0.5 establishing C2 connection to 203.0.113.50:4444"></textarea>
+                    <div class="upload-controls">
+                        <div class="file-upload-row">
+                            <label for="log-file-input" class="soc-file-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14" style="vertical-align:middle;margin-right:4px">
+                                    <path
+                                        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                                </svg>
+                                Upload File
+                            </label>
+                            <input type="file" id="log-file-input" accept=".txt,.log,.csv,.json,.syslog">
+                            <span id="file-name-display" class="file-name-tag"></span>
+                        </div>
+                        <div class="upload-actions">
+                            <button id="clear-btn" class="soc-btn ghost">Clear</button>
+                            <button id="analyze-btn" class="soc-btn primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14" style="vertical-align:middle;margin-right:4px">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.35-4.35" />
+                                </svg>
+                                Analyze
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <!-- Loading -->
-            <div id="intel-loading" class="loading-state hidden">
-                <div class="spinner"></div>
-                <p>AI REASONING IN PROGRESS...</p>
+            <!-- LOADING -->
+            <div id="intel-loading" class="soc-loading hidden">
+                <div class="soc-spinner"></div>
+                <p>AI ANALYSIS IN PROGRESS</p>
             </div>
 
-            <!-- Results -->
+            <!-- ===== RESULTS ===== -->
             <div id="intel-results" class="hidden">
 
-                <!-- Auto-case notification -->
-                <div id="auto-case-banner" class="case-banner hidden">
-                    <span class="banner-icon">🚨</span>
-                    <span id="auto-case-msg">Case auto-created</span>
+                <!-- Auto-case banner -->
+                <div id="auto-case-banner" class="soc-alert-banner hidden">
+                    <span>🚨</span>
+                    <span id="auto-case-msg"></span>
                 </div>
 
-                <!-- Report Button -->
-                <div class="report-actions">
-                    <button id="generate-report-btn" class="btn accent-btn">📄 Generate Investigation Report</button>
-                </div>
-
-                <!-- Attack Timeline -->
-                <div class="card timeline-card">
-                    <div class="card-header">
-                        <h3>⏱️ Attack Lifecycle Timeline</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="timeline" id="timeline-steps"></div>
-                    </div>
-                </div>
-
-                <!-- Main Results Grid -->
-                <div class="results-grid">
-                    <!-- Left Column -->
-                    <div class="results-left">
-                        <!-- AI Reasoning -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>⚠️ AI Reasoning</h3>
-                            </div>
-                            <div class="card-body">
-                                <p id="attack-explanation"></p>
-                            </div>
-                        </div>
-
-                        <!-- MITRE Mapping -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🛡️ MITRE ATT&CK Mapping</h3>
-                            </div>
-                            <div class="card-body">
-                                <div id="mitre-tags"></div>
-                            </div>
-                        </div>
-
-                        <!-- Remediation & Next Steps -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🔮 Remediation & Next Steps</h3>
-                            </div>
-                            <div class="card-body">
-                                <ul id="next-steps-list"></ul>
-                            </div>
-                        </div>
-
-                        <!-- Defensive Actions -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🛡️ Recommended Defensive Actions</h3>
-                            </div>
-                            <div class="card-body">
-                                <ul id="defensive-actions-list" class="accent-list"></ul>
+                <!-- SECTION 2: KPI Summary Row -->
+                <div class="kpi-row">
+                    <div class="kpi-card" data-severity="risk">
+                        <div class="kpi-severity-bar bar-red"></div>
+                        <div class="kpi-inner">
+                            <div class="kpi-label">ML RISK SCORE</div>
+                            <div class="kpi-value" id="ml-risk-score">--</div>
+                            <div class="kpi-trend trend-up">▲ +5%</div>
+                            <div class="kpi-bar-track">
+                                <div id="ml-risk-bar" class="kpi-bar bar-risk"></div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Right Column -->
-                    <div class="results-right">
-                        <!-- Severity -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Severity Assessment</h3>
-                            </div>
-                            <div class="card-body centered">
-                                <div id="severity-badge" class="badge">PENDING</div>
+                    <div class="kpi-card" data-severity="anomaly">
+                        <div class="kpi-severity-bar bar-purple"></div>
+                        <div class="kpi-inner">
+                            <div class="kpi-label">ANOMALY SCORE</div>
+                            <div class="kpi-value" id="behavior-anomaly-score">--</div>
+                            <div class="kpi-trend trend-down">▼ −2%</div>
+                            <div class="kpi-bar-track">
+                                <div id="anomaly-bar" class="kpi-bar bar-anomaly"></div>
                             </div>
                         </div>
-
-                        <!-- Confidence -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>AI Confidence</h3>
-                            </div>
-                            <div class="card-body centered">
-                                <div id="confidence-meter" class="big-stat cyan">--%</div>
-                                <div id="confidence-reason" class="stat-sub"></div>
-                            </div>
+                    </div>
+                    <div class="kpi-card" data-severity="severity">
+                        <div class="kpi-severity-bar bar-orange"></div>
+                        <div class="kpi-inner">
+                            <div class="kpi-label">SEVERITY</div>
+                            <div id="severity-badge" class="kpi-badge">--</div>
                         </div>
-
-                        <!-- ML Risk Score -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🤖 ML Risk Score</h3>
-                            </div>
-                            <div class="card-body centered">
-                                <div id="ml-risk-score" class="big-stat orange">--</div>
-                                <div class="stat-sub">RandomForest Prediction (0-100)</div>
-                                <div class="progress-bar-container">
-                                    <div id="ml-risk-bar" class="progress-bar gradient-risk"></div>
-                                </div>
-                            </div>
+                    </div>
+                    <div class="kpi-card" data-severity="confidence">
+                        <div class="kpi-severity-bar bar-cyan"></div>
+                        <div class="kpi-inner">
+                            <div class="kpi-label">CONFIDENCE</div>
+                            <div class="kpi-value cyan" id="confidence-meter">--</div>
+                            <div class="kpi-sub" id="confidence-reason"></div>
                         </div>
-
-                        <!-- Behavior Anomaly Score -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>🧠 Behavior Anomaly</h3>
-                            </div>
-                            <div class="card-body centered">
-                                <div id="behavior-anomaly-score" class="big-stat purple">--</div>
-                                <div class="stat-sub">IsolationForest Anomaly (0-100)</div>
-                                <div class="progress-bar-container">
-                                    <div id="anomaly-bar" class="progress-bar gradient-anomaly"></div>
-                                </div>
-                            </div>
+                    </div>
+                    <div class="kpi-card" data-severity="mitre">
+                        <div class="kpi-severity-bar bar-blue"></div>
+                        <div class="kpi-inner">
+                            <div class="kpi-label">MITRE TECHNIQUES</div>
+                            <div id="mitre-tags" class="kpi-tags"></div>
                         </div>
-
-                        <!-- Attack Progression -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Attack Progression</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="stat-item">
-                                    <span class="stat-label">CURRENT STAGE</span>
-                                    <div id="current-stage-text" class="stat-value orange">--</div>
-                                </div>
-                                <div class="stat-item" style="margin-top: 16px;">
-                                    <span class="stat-label">PREDICTED NEXT MOVE</span>
-                                    <div id="next-stage-text" class="stat-value pink">--</div>
-                                </div>
-                            </div>
+                    </div>
+                    <div class="kpi-card" data-severity="geo">
+                        <div class="kpi-severity-bar bar-green"></div>
+                        <div class="kpi-inner">
+                            <div class="kpi-label">EXT. IPs DETECTED</div>
+                            <div class="kpi-value cyan" id="geo-ip-count">0</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- IP Geo Map -->
-                <div class="card" style="margin-top: 20px;" id="geo-map-card">
-                    <div class="card-header">
-                        <h3>🌍 IP Geo Visualization</h3>
-                        <span class="header-sub" id="geo-ip-count"></span>
+                <!-- Report button row -->
+                <div class="report-bar">
+                    <button id="generate-report-btn" class="soc-btn accent">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                            height="14" style="vertical-align:middle;margin-right:4px">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        Generate Investigation Report
+                    </button>
+                </div>
+
+                <!-- SECTION 3: Full-width Geo Map -->
+                <div class="soc-panel" id="geo-map-card">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="2" y1="12" x2="22" y2="12" />
+                                <path
+                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                            </svg>
+                            IP GEO VISUALIZATION
+                        </span>
                     </div>
-                    <div class="card-body" style="padding: 0;">
+                    <div class="panel-body no-pad">
                         <div id="geo-map"></div>
                     </div>
                 </div>
 
-                <!-- Evidence Trace -->
-                <div class="card" style="margin-top: 20px;">
-                    <div class="card-header">
-                        <h3>🔍 Evidence Trace (RAG Retrieval)</h3>
+                <!-- SECTION 4: Two-column — Timeline + Actions -->
+                <div class="soc-split">
+                    <!-- Left: Attack Timeline -->
+                    <div class="soc-panel">
+                        <div class="panel-header">
+                            <span class="panel-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                ATTACK LIFECYCLE
+                            </span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="soc-progression">
+                                <div class="prog-item">
+                                    <span class="prog-label">Current Stage</span>
+                                    <span class="prog-value warn" id="current-stage-text">--</span>
+                                </div>
+                                <div class="prog-item">
+                                    <span class="prog-label">Predicted Next</span>
+                                    <span class="prog-value danger" id="next-stage-text">--</span>
+                                </div>
+                            </div>
+                            <div class="timeline" id="timeline-steps"></div>
+                        </div>
                     </div>
-                    <div class="card-body">
+                    <!-- Right: Defensive Actions -->
+                    <div class="soc-panel">
+                        <div class="panel-header">
+                            <span class="panel-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                    height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                                DEFENSIVE ACTIONS
+                            </span>
+                        </div>
+                        <div class="panel-body">
+                            <ul id="defensive-actions-list" class="soc-action-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 4b: Next Steps -->
+                <div class="soc-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
+                            REMEDIATION & NEXT STEPS
+                        </span>
+                    </div>
+                    <div class="panel-body">
+                        <ul id="next-steps-list" class="soc-action-list"></ul>
+                    </div>
+                </div>
+
+                <!-- SECTION 5: AI Explanation -->
+                <div class="soc-panel ai-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                            AI REASONING & ANALYSIS
+                        </span>
+                    </div>
+                    <div class="panel-body">
+                        <details class="ai-details" open>
+                            <summary class="ai-details-toggle">Show Full Analysis</summary>
+                            <p id="attack-explanation" class="soc-explanation"></p>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- Evidence Trace -->
+                <div class="soc-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.35-4.35" />
+                            </svg>
+                            EVIDENCE TRACE (RAG)
+                        </span>
+                    </div>
+                    <div class="panel-body">
                         <div id="evidence-content" class="evidence-box"></div>
                     </div>
                 </div>
 
-                <!-- Log Q&A Panel -->
-                <div class="card qa-card" style="margin-top: 20px;">
-                    <div class="card-header">
-                        <h3>🧠 Investigation Q&A</h3>
-                        <span class="header-sub">Ask follow-up questions about this analysis</span>
+                <!-- Investigation Q&A -->
+                <div class="soc-panel qa-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                <path
+                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                            </svg>
+                            INVESTIGATION Q&A
+                        </span>
+                        <span class="panel-sub">Ask follow-up questions about this analysis</span>
                     </div>
-                    <div class="card-body">
+                    <div class="panel-body">
                         <div id="qa-responses" class="qa-responses"></div>
                         <div class="qa-input-area">
-                            <input type="text" id="qa-input"
-                                placeholder="Ask about this analysis... (e.g., Which IPs are most suspicious?)">
-                            <button id="qa-send-btn" class="btn primary">Ask</button>
+                            <input type="text" id="qa-input" placeholder="Ask about this incident...">
+                            <button id="qa-send-btn" class="soc-btn primary">Ask</button>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
-        <!-- END TAB 1 -->
 
-        <!-- ================= TAB 2: SECURITY CHATBOT ================= -->
+        <!-- ============================================================
+             TAB 2 — SECURITY CHATBOT
+             ============================================================ -->
         <div id="tab-chatbot" class="tab-content hidden">
-            <div class="chatbot-container">
-                <div class="card chatbot-card">
-                    <div class="card-header">
-                        <h3>💬 Security Knowledge Assistant</h3>
-                        <span class="header-sub">Ask any cybersecurity question</span>
+            <div class="chat-shell">
+                <div class="soc-panel chat-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                                height="14" style="vertical-align:middle;margin-right:6px;opacity:.6">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            SECURITY KNOWLEDGE ASSISTANT
+                        </span>
                     </div>
-                    <div class="card-body chatbot-body">
+                    <div class="chat-body">
                         <div id="chat-messages" class="chat-messages">
                             <div class="chat-message system">
-                                <div class="msg-content">Welcome! I'm your Security Knowledge Assistant. Ask me about
-                                    cybersecurity concepts, attack techniques, defense strategies, compliance
-                                    frameworks, or anything security-related.</div>
+                                <div class="msg-content">Welcome. Ask me about cybersecurity concepts, attack
+                                    techniques, defense strategies, or compliance frameworks.</div>
                             </div>
                         </div>
-                        <div class="chat-input-area">
-                            <input type="text" id="chat-input"
-                                placeholder="Ask a security question... (e.g., What is SQL injection?)">
-                            <button id="chat-send-btn" class="btn primary">Send</button>
+                        <div class="chat-input-bar">
+                            <input type="text" id="chat-input" placeholder="Type a security question...">
+                            <button id="chat-send-btn" class="soc-btn primary">Send</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- END TAB 2 -->
 
-        <!-- ================= TAB 3: CASE MANAGEMENT ================= -->
+        <!-- ============================================================
+             TAB 3 — CASE MANAGEMENT
+             ============================================================ -->
         <div id="tab-cases" class="tab-content hidden">
-            <div class="cases-header">
-                <h2>📂 Case Management</h2>
-                <p class="cases-sub">Auto-generated cases from AI Log Intelligence analysis</p>
+            <div class="cases-title-bar">
+                <h2>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"
+                        style="vertical-align:middle;margin-right:6px;opacity:.7">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Case Management
+                </h2>
+                <span class="cases-sub">Auto-generated from AI Log Intelligence</span>
             </div>
 
-            <div class="card">
-                <div class="card-body" style="overflow-x: auto;">
-                    <table id="cases-table">
+            <!-- Filter bar -->
+            <div class="cases-filter-bar">
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select class="filter-select">
+                        <option>All</option>
+                        <option>Open</option>
+                        <option>Investigating</option>
+                        <option>Closed</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Risk Level</label>
+                    <select class="filter-select">
+                        <option>All</option>
+                        <option>High</option>
+                        <option>Medium</option>
+                        <option>Low</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="soc-panel">
+                <div class="panel-body no-pad table-wrap">
+                    <table class="soc-table" id="cases-table">
                         <thead>
                             <tr>
                                 <th>Case ID</th>
-                                <th>Created At</th>
+                                <th>Created</th>
                                 <th>Severity</th>
                                 <th>ML Risk</th>
                                 <th>Status</th>
@@ -295,20 +443,32 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="cases-table-body">
-                        </tbody>
+                        <tbody id="cases-table-body"></tbody>
                     </table>
-                    <div id="no-cases-msg" class="no-cases hidden">
-                        No cases yet. Cases are auto-created when log analysis detects high risk threats.
+                    <div id="no-cases-msg" class="soc-empty hidden">
+                        No cases yet. Cases are auto-created when analysis detects high-risk threats.
                     </div>
                 </div>
             </div>
         </div>
-        <!-- END TAB 3 -->
 
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=3"></script>
+
+    <!-- Sidebar-aware page title updater -->
+    <script>
+        (function () {
+            const titles = { intelligence: 'Log Intelligence', chatbot: 'Security Chat', cases: 'Case Management' };
+            document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const t = titles[btn.getAttribute('data-tab')] || 'Dashboard';
+                    const el = document.getElementById('page-title');
+                    if (el) el.textContent = t;
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>
